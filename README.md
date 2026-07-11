@@ -19,11 +19,7 @@ Quick install (PowerShell):
 iwr https://cli.pogly.gg -useb | iex
 ```
 
-This downloads the [latest release](https://github.com/PoglyApp/pogly-cli/releases), installs it to `%LOCALAPPDATA%\Pogly\cli`, and adds it to your `PATH`. The same script lives at [install.ps1](install.ps1) if you'd rather read it first:
-
-```powershell
-iwr https://raw.githubusercontent.com/PoglyApp/pogly-cli/main/install.ps1 -useb | iex
-```
+This downloads the [latest release](https://github.com/PoglyApp/pogly-cli/releases), installs it to `%LOCALAPPDATA%\Pogly\cli`, and adds it to your `PATH`. The script it runs is [install.ps1](install.ps1) if you'd rather read it first.
 
 ### Manual install
 

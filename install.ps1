@@ -1,5 +1,6 @@
 # Quick installer for pogly-cli.
 #   iwr https://cli.pogly.gg -useb | iex
+# cli.pogly.gg serves a copy of this file as its index - re-upload after editing.
 $ErrorActionPreference = "Stop"
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
