@@ -1,0 +1,96 @@
+# pogly-cli
+
+A Windows command-line tool for managing a [Pogly](https://pogly.gg) overlay through its HTTP API — and an open-source reference for building your own API integrations.
+
+```
+pogly elements add text --text "New follower!" --size 64 --color "#82a5ff" --x 200 --y 150
+pogly layouts set-active --name "Starting Soon"
+pogly elements list
+```
+
+Feedback and questions: https://discord.gg/pogly
+API documentation: https://docs.pogly.gg/#http-api
+
+## Install
+
+Quick install (PowerShell):
+
+```powershell
+iwr https://cli.pogly.gg -useb | iex
+```
+
+This downloads the [latest release](https://github.com/PoglyApp/pogly-cli/releases), installs it to `%LOCALAPPDATA%\Pogly\cli`, and adds it to your `PATH`. The same script lives at [install.ps1](install.ps1) if you'd rather read it first:
+
+```powershell
+iwr https://raw.githubusercontent.com/PoglyApp/pogly-cli/main/install.ps1 -useb | iex
+```
+
+### Manual install
+
+1. Download `pogly.exe` and `pogly-cli.exe` from the [latest release](https://github.com/PoglyApp/pogly-cli/releases).
+2. Place them like this (`<version>` is the release version, e.g. `0.1.0`):
+   ```
+   %LOCALAPPDATA%\Pogly\cli\pogly.exe
+   %LOCALAPPDATA%\Pogly\cli\bin\<version>\pogly-cli.exe
+   ```
+3. Add `%LOCALAPPDATA%\Pogly\cli` to your `PATH`.
+
+### Version management
+
+`pogly.exe` is a small launcher that runs the selected `pogly-cli.exe`, so multiple versions can live side by side:
+
+```
+pogly version           # show the current version
+pogly version upgrade   # install and switch to the latest release
+pogly version list      # list installed versions
+pogly version use 0.1.0 # switch to another installed version
+```
+
+## Quickstart
+
+Mint an API token in Pogly under **Settings → API Access**, then register your overlay:
+
+```
+pogly overlay add https://cloud.pogly.gg/overlay?module=<identity> --token pgly_xxxx --nickname main
+```
+
+`overlay add` accepts a full overlay URL, a raw module identity (64 hex chars), or a legacy module name. The first overlay you add becomes the default; every other command runs against the default unless you pass `--overlay <nickname>`.
+
+```
+pogly whoami
+pogly layouts list
+pogly elements add image --url "https://cdn.7tv.app/emote/xxxx/4x.webp" --width 128 --height 128
+pogly elements update 42 --x 500 --y 300 --locked true
+pogly elements delete 42
+```
+
+## Commands
+
+| Command | Description |
+| --- | --- |
+| `ping` | Check that the overlay API is reachable (no token needed) |
+| `whoami` | Show the token's label, identity, and permissions |
+| `overlay list\|add\|update\|remove\|set-default` | Manage overlay profiles (stored in `%APPDATA%\Pogly\cli\config.toml`) |
+| `elements list\|add <type>\|update\|delete` | Manage elements; `add` has `text`, `image`, `widget`, and `media` subcommands |
+| `elementdata list\|add\|update\|delete` | Manage element data assets |
+| `layouts list\|add\|duplicate\|rename\|delete\|set-active` | Manage layouts; `set-active` switches the live scene |
+| `folders list\|add\|update\|delete` | Manage asset folders |
+| `version [list\|use\|upgrade]` | Show, switch, or upgrade the installed CLI version |
+
+Every command supports `--help` for its full flag list, `--json` for the raw API response, `--overlay <nickname>` to target a specific profile, and `--host <url>` to override the SpacetimeDB host.
+
+Writes require the matching permission on the token owner's account (e.g. `AddElement` for `elements add`); read commands require `Whitelisted`. Read-only tokens are rejected for all writes.
+
+## Building from source
+
+```
+cargo build --release
+```
+
+Produces `target\release\pogly-cli.exe` (the CLI) and `target\release\pogly.exe` (the launcher). Run the CLI directly during development: `cargo run -p pogly-cli -- <args>`.
+
+To test `version upgrade` against a fork, set `POGLY_RELEASES_REPO=<owner>/<repo>`.
+
+## License
+
+[MIT](LICENSE)
