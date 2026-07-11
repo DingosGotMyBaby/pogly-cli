@@ -31,6 +31,10 @@ This downloads the [latest release](https://github.com/PoglyApp/pogly-cli/releas
    ```
 3. Add `%LOCALAPPDATA%\Pogly\cli` to your `PATH`.
 
+### Uninstall
+
+Run [uninstall.ps1](uninstall.ps1) — it removes the binaries, version store, and PATH entry. Your overlay profiles are kept unless you pass `-PurgeConfig`.
+
 ### Version management
 
 `pogly.exe` is a small launcher that runs the selected `pogly-cli.exe`, so multiple versions can live side by side:
