@@ -77,6 +77,10 @@ Every command supports `--help` for its full flag list, `--json` for the raw API
 
 Writes require the matching permission on the token owner's account (e.g. `AddElement` for `elements add`); read commands require `Whitelisted`. Read-only tokens are rejected for all writes.
 
+## Examples
+
+The [examples/](examples/) folder shows how to hook the CLI into your stream: Streamer.bot-triggered alerts on subs/raids/channel points, automatic Pogly↔OBS scene sync, live counters, and one rick roll. Anything that can run a program can drive your overlay.
+
 ## Building from source
 
 ```
