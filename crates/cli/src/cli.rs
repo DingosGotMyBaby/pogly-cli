@@ -17,9 +17,6 @@ pub struct GlobalArgs {
     /// Print raw JSON responses
     #[arg(long, global = true)]
     pub json: bool,
-    /// Override the SpacetimeDB host for this invocation
-    #[arg(long, global = true)]
-    pub host: Option<String>,
 }
 
 #[derive(Subcommand)]
@@ -71,17 +68,14 @@ pub enum OverlaySub {
     List,
     /// Add an overlay profile
     Add {
-        /// Module identity (64 hex chars), legacy module name, or full overlay URL
+        /// Overlay address (64 hex chars), legacy overlay name, or full overlay URL
         target: String,
         /// API token (pgly_...) minted in Pogly under Settings -> API Access
         #[arg(long)]
         token: String,
-        /// Profile nickname (defaults to a short form of the module)
+        /// Profile nickname (defaults to a short form of the overlay address)
         #[arg(long)]
         nickname: Option<String>,
-        /// SpacetimeDB host (defaults to maincloud or the URL's domain parameter)
-        #[arg(long)]
-        host: Option<String>,
         /// Skip validating the token with a whoami call
         #[arg(long)]
         no_verify: bool,
@@ -91,11 +85,9 @@ pub enum OverlaySub {
         nickname: String,
         #[arg(long)]
         token: Option<String>,
-        /// Module identity or overlay URL
+        /// Overlay address or overlay URL
         #[arg(long)]
-        module: Option<String>,
-        #[arg(long)]
-        host: Option<String>,
+        address: Option<String>,
         /// Change the profile nickname
         #[arg(long)]
         rename: Option<String>,

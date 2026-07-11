@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::paths;
 
-pub const DEFAULT_HOST: &str = "https://maincloud.spacetimedb.com";
+pub const HOST: &str = "https://maincloud.spacetimedb.com";
 
 #[derive(Serialize, Deserialize, Default)]
 pub struct Config {
@@ -15,9 +15,9 @@ pub struct Config {
 #[derive(Serialize, Deserialize, Clone)]
 pub struct OverlayProfile {
     pub nickname: String,
-    pub module: String,
+    #[serde(alias = "module")]
+    pub address: String,
     pub token: String,
-    pub host: String,
 }
 
 impl Config {
@@ -58,63 +58,47 @@ impl Config {
             }
         }
         match self.overlays.len() {
-            0 => bail!("no overlays configured; run `pogly overlay add <identity-or-url> --token <pgly_...>`"),
+            0 => bail!("no overlays configured; run `pogly overlay add <address-or-url> --token <pgly_...>`"),
             1 => Ok(&self.overlays[0]),
             _ => bail!("no default overlay set; run `pogly overlay set-default <nickname>`"),
         }
     }
 }
 
-pub struct ParsedTarget {
-    pub module: String,
-    pub host: Option<String>,
-}
-
-pub fn parse_overlay_target(input: &str) -> Result<ParsedTarget> {
+pub fn parse_overlay_target(input: &str) -> Result<String> {
     let input = input.trim();
     if input.contains("://") || input.contains("/overlay") {
         parse_overlay_url(input)
     } else if input.is_empty() {
         bail!("empty overlay target")
     } else {
-        Ok(ParsedTarget {
-            module: normalize_module(input),
-            host: None,
-        })
+        Ok(normalize_address(input))
     }
 }
 
-fn parse_overlay_url(url: &str) -> Result<ParsedTarget> {
+fn parse_overlay_url(url: &str) -> Result<String> {
     let query = url
         .split_once('?')
         .map(|(_, q)| q)
-        .context("overlay URL has no query string; expected ...?module=<identity>")?;
-    let mut module = None;
-    let mut domain = None;
-    for pair in query.split('&') {
-        let (key, value) = pair.split_once('=').unwrap_or((pair, ""));
-        match percent_decode(key).to_ascii_lowercase().as_str() {
-            "module" => module = Some(percent_decode(value)),
-            "domain" => domain = Some(percent_decode(value)),
-            _ => {}
-        }
-    }
-    let module = module
-        .filter(|m| !m.is_empty())
-        .context("overlay URL has no module parameter")?;
-    Ok(ParsedTarget {
-        module: normalize_module(&module),
-        host: domain.filter(|d| !d.is_empty()).map(|d| normalize_host(&d)),
-    })
+        .context("overlay URL has no query string; expected ...?module=<overlay address>")?;
+    let address = query
+        .split('&')
+        .filter_map(|pair| {
+            let (key, value) = pair.split_once('=').unwrap_or((pair, ""));
+            (percent_decode(key).eq_ignore_ascii_case("module")).then(|| percent_decode(value))
+        })
+        .find(|v| !v.is_empty())
+        .context("overlay URL has no overlay address (?module=...) parameter")?;
+    Ok(normalize_address(&address))
 }
 
 pub fn is_identity_hex(value: &str) -> bool {
     value.len() == 64 && value.bytes().all(|b| b.is_ascii_hexdigit())
 }
 
-// Mirrors the frontend: 64-hex identities pass through, anything else is a
+// Mirrors the frontend: 64-hex addresses pass through, anything else is a
 // legacy database name that gets the "pogly-" prefix re-added.
-pub fn normalize_module(value: &str) -> String {
+pub fn normalize_address(value: &str) -> String {
     let value = value.trim();
     if is_identity_hex(value) {
         value.to_ascii_lowercase()
@@ -125,25 +109,11 @@ pub fn normalize_module(value: &str) -> String {
     }
 }
 
-// Shared overlay URLs carry the SpacetimeDB host as a websocket origin.
-pub fn normalize_host(host: &str) -> String {
-    let host = host.trim().trim_end_matches('/');
-    if let Some(rest) = host.strip_prefix("wss://") {
-        format!("https://{rest}")
-    } else if let Some(rest) = host.strip_prefix("ws://") {
-        format!("http://{rest}")
-    } else if host.contains("://") {
-        host.to_string()
+pub fn short_address(address: &str) -> String {
+    if is_identity_hex(address) {
+        format!("{}…", &address[..8])
     } else {
-        format!("https://{host}")
-    }
-}
-
-pub fn short_module(module: &str) -> String {
-    if is_identity_hex(module) {
-        format!("{}…", &module[..8])
-    } else {
-        module.to_string()
+        address.to_string()
     }
 }
 
@@ -191,70 +161,60 @@ fn percent_decode(value: &str) -> String {
 mod tests {
     use super::*;
 
-    const IDENTITY: &str = "c200a94ce78ba0b0f4a121022g00000000000000000000000000000000000000";
-    const HEX_IDENTITY: &str = "c200a94ce78ba0b0f4a1210220abcdef0123456789abcdef0123456789abcdef";
+    const NOT_HEX: &str = "c200a94ce78ba0b0f4a121022g00000000000000000000000000000000000000";
+    const HEX_ADDRESS: &str = "c200a94ce78ba0b0f4a1210220abcdef0123456789abcdef0123456789abcdef";
 
     #[test]
     fn identity_hex_detection() {
-        assert!(is_identity_hex(HEX_IDENTITY));
-        assert!(is_identity_hex(&HEX_IDENTITY.to_uppercase()));
-        assert!(!is_identity_hex(IDENTITY));
+        assert!(is_identity_hex(HEX_ADDRESS));
+        assert!(is_identity_hex(&HEX_ADDRESS.to_uppercase()));
+        assert!(!is_identity_hex(NOT_HEX));
         assert!(!is_identity_hex("pogly-mystream"));
-        assert!(!is_identity_hex(&HEX_IDENTITY[..63]));
+        assert!(!is_identity_hex(&HEX_ADDRESS[..63]));
     }
 
     #[test]
-    fn bare_identity_passes_through_lowercased() {
-        let parsed = parse_overlay_target(&HEX_IDENTITY.to_uppercase()).unwrap();
-        assert_eq!(parsed.module, HEX_IDENTITY);
-        assert!(parsed.host.is_none());
+    fn bare_address_passes_through_lowercased() {
+        let address = parse_overlay_target(&HEX_ADDRESS.to_uppercase()).unwrap();
+        assert_eq!(address, HEX_ADDRESS);
     }
 
     #[test]
     fn legacy_name_gets_prefix_and_normalization() {
-        assert_eq!(normalize_module("My_Stream"), "pogly-my-stream");
-        assert_eq!(normalize_module("pogly-already"), "pogly-already");
+        assert_eq!(normalize_address("My_Stream"), "pogly-my-stream");
+        assert_eq!(normalize_address("pogly-already"), "pogly-already");
     }
 
     #[test]
-    fn url_with_identity() {
-        let parsed = parse_overlay_target(&format!(
-            "https://cloud.pogly.gg/overlay?module={HEX_IDENTITY}"
+    fn url_with_address() {
+        let address = parse_overlay_target(&format!(
+            "https://cloud.pogly.gg/overlay?module={HEX_ADDRESS}"
         ))
         .unwrap();
-        assert_eq!(parsed.module, HEX_IDENTITY);
-        assert!(parsed.host.is_none());
+        assert_eq!(address, HEX_ADDRESS);
     }
 
     #[test]
-    fn url_with_legacy_name_and_domain() {
-        let parsed = parse_overlay_target(
-            "https://selfhost.example/overlay?module=mystream&domain=wss%3A%2F%2Fstdb.example.com",
+    fn url_with_legacy_name_and_extra_params() {
+        let address = parse_overlay_target(
+            "https://cloud.pogly.gg/overlay?module=mystream&domain=wss%3A%2F%2Fignored.example",
         )
         .unwrap();
-        assert_eq!(parsed.module, "pogly-mystream");
-        assert_eq!(parsed.host.as_deref(), Some("https://stdb.example.com"));
+        assert_eq!(address, "pogly-mystream");
     }
 
     #[test]
-    fn ws_domain_normalizes_to_http() {
-        assert_eq!(
-            normalize_host("ws://localhost:3000/"),
-            "http://localhost:3000"
-        );
-        assert_eq!(
-            normalize_host("stdb.example.com"),
-            "https://stdb.example.com"
-        );
-        assert_eq!(
-            normalize_host("https://stdb.example.com"),
-            "https://stdb.example.com"
-        );
-    }
-
-    #[test]
-    fn url_without_module_errors() {
+    fn url_without_address_errors() {
         assert!(parse_overlay_target("https://cloud.pogly.gg/overlay?other=1").is_err());
         assert!(parse_overlay_target("https://cloud.pogly.gg/overlay").is_err());
+    }
+
+    #[test]
+    fn old_config_module_key_still_loads() {
+        let config: Config = toml::from_str(
+            "default_overlay = \"main\"\n[[overlays]]\nnickname = \"main\"\nmodule = \"pogly-old\"\ntoken = \"pgly_x\"\nhost = \"https://ignored.example\"\n",
+        )
+        .unwrap();
+        assert_eq!(config.overlays[0].address, "pogly-old");
     }
 }

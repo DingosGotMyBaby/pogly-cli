@@ -30,6 +30,5 @@ pub fn run(cli: Cli) -> Result<()> {
 pub fn client_for(global: &GlobalArgs) -> Result<ApiClient> {
     let config = Config::load()?;
     let profile = config.resolve(global.overlay.as_deref())?;
-    let host = global.host.as_deref().unwrap_or(&profile.host);
-    Ok(ApiClient::new(host, &profile.module, &profile.token))
+    Ok(ApiClient::new(&profile.address, &profile.token))
 }

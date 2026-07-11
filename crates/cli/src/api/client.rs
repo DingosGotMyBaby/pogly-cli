@@ -25,7 +25,7 @@ pub struct ApiClient {
 }
 
 impl ApiClient {
-    pub fn new(host: &str, module: &str, token: &str) -> ApiClient {
+    pub fn new(address: &str, token: &str) -> ApiClient {
         let config = Agent::config_builder()
             .timeout_global(Some(Duration::from_secs(10)))
             .http_status_as_error(false)
@@ -33,11 +33,7 @@ impl ApiClient {
             .build();
         ApiClient {
             agent: config.new_agent(),
-            base: format!(
-                "{}/v1/database/{}/route",
-                host.trim_end_matches('/'),
-                module
-            ),
+            base: format!("{}/v1/database/{address}/route", crate::config::HOST),
             token: token.to_string(),
         }
     }

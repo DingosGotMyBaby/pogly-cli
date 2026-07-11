@@ -47,10 +47,10 @@ pogly version use 0.1.0 # switch to another installed version
 Mint an API token in Pogly under **Settings → API Access**, then register your overlay:
 
 ```
-pogly overlay add https://cloud.pogly.gg/overlay?module=<identity> --token pgly_xxxx --nickname main
+pogly overlay add https://cloud.pogly.gg/overlay?module=<overlay-address> --token pgly_xxxx --nickname main
 ```
 
-`overlay add` accepts a full overlay URL, a raw module identity (64 hex chars), or a legacy module name. The first overlay you add becomes the default; every other command runs against the default unless you pass `--overlay <nickname>`.
+`overlay add` accepts a full overlay URL, a raw overlay address (64 hex chars), or a legacy overlay name. The first overlay you add becomes the default; every other command runs against the default unless you pass `--overlay <nickname>`.
 
 ```
 pogly whoami
@@ -73,7 +73,7 @@ pogly elements delete 42
 | `folders list\|add\|update\|delete` | Manage asset folders |
 | `version [list\|use\|upgrade]` | Show, switch, or upgrade the installed CLI version |
 
-Every command supports `--help` for its full flag list, `--json` for the raw API response, `--overlay <nickname>` to target a specific profile, and `--host <url>` to override the SpacetimeDB host.
+Every command supports `--help` for its full flag list, `--json` for the raw API response, and `--overlay <nickname>` to target a specific profile.
 
 Writes require the matching permission on the token owner's account (e.g. `AddElement` for `elements add`); read commands require `Whitelisted`. Read-only tokens are rejected for all writes.
 
