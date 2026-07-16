@@ -75,6 +75,7 @@ pogly elements delete 42
 | `elementdata list\|add\|update\|delete` | Manage element data assets |
 | `layouts list\|add\|duplicate\|rename\|delete\|set-active` | Manage layouts; `set-active` switches the live scene |
 | `folders list\|add\|update\|delete` | Manage asset folders |
+| `osc` | Run the OSC listener server to control the overlay via UDP |
 | `version [list\|use\|upgrade]` | Show, switch, or upgrade the installed CLI version |
 
 Every command supports `--help` for its full flag list, `--json` for the raw API response, and `--overlay <nickname>` to target a specific profile.
@@ -130,6 +131,34 @@ Or for development / running from source:
   }
 }
 ```
+
+## Open Sound Control (OSC) Server
+
+`pogly-cli` can run as a UDP-based OSC listener, allowing you to instantly control your overlay layouts and elements with zero process-spawn overhead. This is perfect for integrations with Stream Deck (via an OSC plugin), TouchOSC, VRChat, or custom script controllers.
+
+To start the OSC server:
+
+```
+pogly osc --port 9000
+```
+
+### Supported OSC Address Routes
+
+| OSC Address | Arguments | Description |
+|---|---|---|
+| `/pogly/ping` | None | Pings the overlay API to verify connectivity. |
+| `/pogly/whoami` | None | Prints the connected API token details and permissions. |
+| `/pogly/layouts/set-active`<br>`/pogly/layouts/set_active` | `target` (Int, Long, or String) | Switches active layout (accepts layout ID or layout name). |
+| `/pogly/elements/delete` | `id` (Int, Long, or String) | Deletes the element with the specified ID. |
+| `/pogly/elements/update/position` | `id` (Int/Long/String), `x` (Int/Long/Float/String), `y` (Int/Long/Float/String) | Moves the element to coordinates `x` and `y`. |
+| `/pogly/elements/update/transparency` | `id` (Int/Long/String), `transparency` (Int/Long/Float/String) | Sets element transparency (0-100). |
+| `/pogly/elements/update/text` | `id` (Int/Long/String), `text` (String/Int/Float/Bool) | Updates text element text content. |
+| `/pogly/elements/update/media/playing` | `id` (Int/Long/String), `playing` (Bool/Int) | Plays or pauses a media element. |
+| `/pogly/elements/update/media/volume` | `id` (Int/Long/String), `volume` (Int/Long/Float/String) | Sets media element volume (0-100). |
+| `/pogly/elements/update/media/timestamp` | `id` (Int/Long/String), `timestamp` (Int/Long/Float/String) | Seeks media element to timestamp in seconds. |
+| `/pogly/elements/update` | `id` (Int/Long/String), `field_name` (String), `value` (Any) | Updates a single field dynamically (e.g. `color`, `textSize`, `alwaysLoaded`). |
+
+Values are automatically coerced to the required type (e.g. float arguments will be converted to integers or booleans where appropriate).
 
 ## Building from source
 
