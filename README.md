@@ -136,6 +136,8 @@ Or for development / running from source:
 
 `pogly-cli` can run as a UDP-based OSC listener, allowing you to instantly control your overlay layouts and elements with zero process-spawn overhead. This is perfect for integrations with Stream Deck (via an OSC plugin), TouchOSC, VRChat, or custom script controllers.
 
+To match the native 30Hz server-side update rate, the listener throttles outgoing API updates and automatically deduplicates incoming queues (e.g. merging rapid adjustments so only the latest values are sent within the same tick window).
+
 To start the OSC server:
 
 ```
